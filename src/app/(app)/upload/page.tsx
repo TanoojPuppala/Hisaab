@@ -1,6 +1,19 @@
+"use client";
+
+import React, { useRef, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Camera, Image } from "lucide-react";
+import { CheckCircle2, Camera, Image, Loader2 } from "lucide-react";
+import { useToast } from '@/hooks/use-toast';
+import { analyzeReceipt, AnalyzeReceiptOutput } from '@/ai/flows/receipt-analysis';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 const scanTips = [
   "Ensure good lighting.",
@@ -10,13 +23,63 @@ const scanTips = [
 ];
 
 export default function UploadPage() {
-  // Send image to ADK backend for receipt analysis here
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeReceiptOutput | null>(null);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleImage(file);
+    }
+  };
+
+  const handleImage = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUri = e.target?.result as string;
+      setIsLoading(true);
+      try {
+        const result = await analyzeReceipt({ photoDataUri: dataUri });
+        setAnalysisResult(result);
+        setIsResultModalOpen(true);
+      } catch (error) {
+        console.error('Error analyzing receipt:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Analysis Failed',
+          description: 'Could not analyze the receipt. Please try again.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+  
   const handleUpload = (method: 'camera' | 'gallery') => {
-    console.log(`Upload method: ${method}. Implement connection to ADK server here.`);
+    if (fileInputRef.current) {
+      if (method === 'camera') {
+        fileInputRef.current.setAttribute('capture', 'environment');
+      } else {
+        fileInputRef.current.removeAttribute('capture');
+      }
+      fileInputRef.current.click();
+    }
   };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
+       <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        className="hidden"
+        accept="image/*"
+      />
       <div className="text-center">
         <h2 className="font-headline text-xl font-bold">Receipt Upload</h2>
         <p className="text-muted-foreground">Add a new receipt to your history.</p>
@@ -24,12 +87,12 @@ export default function UploadPage() {
 
       <Card>
         <CardContent className="p-6 space-y-4">
-            <Button size="lg" className="w-full h-24 text-lg flex-col gap-2" onClick={() => handleUpload('camera')}>
-                <Camera className="h-8 w-8" />
+            <Button size="lg" className="w-full h-24 text-lg flex-col gap-2" onClick={() => handleUpload('camera')} disabled={isLoading}>
+                {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Camera className="h-8 w-8" />}
                 <span>Take a Photo</span>
             </Button>
-            <Button size="lg" variant="secondary" className="w-full h-24 text-lg flex-col gap-2" onClick={() => handleUpload('gallery')}>
-                <Image className="h-8 w-8" />
+            <Button size="lg" variant="secondary" className="w-full h-24 text-lg flex-col gap-2" onClick={() => handleUpload('gallery')} disabled={isLoading}>
+                 {isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> :  <Image className="h-8 w-8" />}
                 <span>Upload from Gallery</span>
             </Button>
         </CardContent>
@@ -51,6 +114,27 @@ export default function UploadPage() {
           </ul>
         </CardContent>
       </Card>
+      
+       <Dialog open={isResultModalOpen} onOpenChange={setIsResultModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Receipt Analysis Result</DialogTitle>
+            <DialogDescription>
+              Here's what we extracted from your receipt.
+            </DialogDescription>
+          </DialogHeader>
+          {analysisResult && (
+            <div className="py-4 space-y-2">
+              <p><strong>Vendor:</strong> {analysisResult.vendor}</p>
+              <p><strong>Date:</strong> {analysisResult.date}</p>
+              <p><strong>Amount:</strong> {analysisResult.amount} {analysisResult.currency}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsResultModalOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

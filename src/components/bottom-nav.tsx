@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, History, LayoutDashboard, Upload, Wallet2 } from 'lucide-react';
+import { Bot, History, LayoutDashboard, Upload, Wallet2, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/chat', label: 'AI Chat', icon: Bot },
+  { href: '/expenses', label: 'Expenses', icon: Receipt },
   { href: '/upload', label: 'Upload', icon: Upload },
   { href: '/history', label: 'History', icon: History },
-  { href: '/wallet', label: 'Wallet', icon: Wallet2 },
+  { href: '/chat', label: 'AI Chat', icon: Bot },
 ];
 
 export default function BottomNav() {
@@ -20,7 +20,7 @@ export default function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-10 mx-auto h-16 max-w-md border-t bg-background/95 backdrop-blur-sm">
       <div className="grid h-full grid-cols-5">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}

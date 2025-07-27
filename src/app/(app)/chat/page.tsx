@@ -5,7 +5,7 @@ import { Bot, Mic, Send, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { financialInsightsChat } from '@/ai/flows/financial-insights-chat';
+import { useToast } from '@/hooks/use-toast';
 
 type Message = {
   id: number;
@@ -34,21 +36,35 @@ export default function AiChatPage() {
   ]);
   const [input, setInput] = useState('');
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  const [language, setLanguage] = useState('en');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  // Post AI chat input to ADK GPT-based financial assistant
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (input.trim() === '') return;
 
     const userMessage: Message = { id: Date.now(), text: input, sender: 'user' };
     setMessages(prev => [...prev, userMessage]);
-    
-    // Simulate AI response
-    setTimeout(() => {
-        const aiResponse: Message = { id: Date.now() + 1, text: `I've received your query about "${input}". Here are some insights...`, sender: 'ai' };
-        setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
-
+    const currentInput = input;
     setInput('');
+    setIsLoading(true);
+
+    try {
+      const result = await financialInsightsChat({ query: currentInput, language });
+      const aiResponse: Message = { id: Date.now() + 1, text: result.response, sender: 'ai' };
+      setMessages(prev => [...prev, aiResponse]);
+    } catch (error) {
+      console.error('Error getting financial insights:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to get financial insights. Please try again.',
+      });
+       const aiResponse: Message = { id: Date.now() + 1, text: "Sorry, I couldn't process your request.", sender: 'ai' };
+       setMessages(prev => [...prev, aiResponse]);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleMicClick = () => {
@@ -90,6 +106,16 @@ export default function AiChatPage() {
               )}
             </div>
           ))}
+           {isLoading && (
+            <div className="flex items-start gap-3">
+              <Avatar>
+                <AvatarFallback><Bot /></AvatarFallback>
+              </Avatar>
+              <div className="max-w-xs rounded-lg px-4 py-3 text-sm rounded-bl-none bg-secondary">
+                <p className="animate-pulse">...</p>
+              </div>
+            </div>
+          )}
         </div>
       </ScrollArea>
       <div className="flex items-center gap-2 border-t p-4">
@@ -99,12 +125,13 @@ export default function AiChatPage() {
           onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
           placeholder="Ask a financial question..."
           className="flex-1"
+          disabled={isLoading}
         />
-        <Button size="icon" variant="ghost" onClick={handleMicClick}>
+        <Button size="icon" variant="ghost" onClick={handleMicClick} disabled={isLoading}>
           <Mic className="h-5 w-5" />
           <span className="sr-only">Voice Input</span>
         </Button>
-        <Button size="icon" onClick={handleSendMessage}>
+        <Button size="icon" onClick={handleSendMessage} disabled={isLoading}>
           <Send className="h-5 w-5" />
           <span className="sr-only">Send Message</span>
         </Button>
@@ -119,7 +146,7 @@ export default function AiChatPage() {
                 </DialogDescription>
             </DialogHeader>
             <div className="py-4">
-                <Select>
+                <Select onValueChange={setLanguage} defaultValue={language}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a language" />
                     </SelectTrigger>
