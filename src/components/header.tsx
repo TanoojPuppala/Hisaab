@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { IndianRupee, LogOut, Moon, Settings, Sun, UserCircle } from 'lucide-react';
+import { IndianRupee, LogOut, Moon, Settings, Sun, User } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Header() {
@@ -22,7 +22,7 @@ export default function Header() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
-            <UserCircle className="h-6 w-6" />
+            <User className="h-6 w-6" />
             <span className="sr-only">Open user menu</span>
           </Button>
         </DropdownMenuTrigger>
