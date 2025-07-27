@@ -37,7 +37,6 @@ const getDashboardData = () => {
         { id: 2, vendor: 'Uber', amount: 150.50, type: 'Travel', date: 'Today' },
         { id: 3, vendor: 'Zomato', amount: 550.00, type: 'Food', date: 'Yesterday' },
       ],
-      quickTip: "Link your bank account to automatically track recurring expenses and save time!",
     };
 };
 
@@ -145,18 +144,6 @@ export default function DashboardPage() {
               </li>
             ))}
           </ul>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-primary/10 border-primary/20">
-        <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-                <Lightbulb className="h-6 w-6 text-primary"/>
-                Quick Tip
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">{data.quickTip}</p>
         </CardContent>
       </Card>
     </div>
