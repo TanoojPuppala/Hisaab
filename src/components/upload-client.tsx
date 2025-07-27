@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useRouter } from 'next/navigation';
 
 const scanTips = [
   "Ensure good lighting.",
@@ -25,6 +26,7 @@ const scanTips = [
 
 export default function UploadClient() {
   const { toast } = useToast();
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,6 +98,26 @@ export default function UploadClient() {
     }
   };
 
+  const handleDone = () => {
+    if (analysisResult) {
+      const storedHistory = JSON.parse(localStorage.getItem('receiptHistory') || '[]');
+      const newHistoryItem = {
+        id: Date.now(),
+        ...analysisResult,
+        category: 'Uncategorized' // Default category
+      };
+      const updatedHistory = [newHistoryItem, ...storedHistory];
+      localStorage.setItem('receiptHistory', JSON.stringify(updatedHistory));
+      setAnalysisResult(null);
+    }
+    setIsResultModalOpen(false);
+    toast({
+      title: 'Success!',
+      description: 'Your receipt has been added to your history.',
+    });
+    router.push('/history');
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6">
        <input
@@ -165,7 +187,7 @@ export default function UploadClient() {
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => setIsResultModalOpen(false)}>Done</Button>
+            <Button onClick={handleDone}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

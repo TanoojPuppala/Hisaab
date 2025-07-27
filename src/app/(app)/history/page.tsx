@@ -1,8 +1,19 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+"use client";
+
+import { useEffect, useState } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-// Fetch receipt history from ADK server
-const getReceiptHistory = async () => {
+type Receipt = {
+  id: number;
+  date: string;
+  vendor: string;
+  amount: number;
+  currency?: string;
+  category: string;
+};
+
+const getReceiptHistory = (): Receipt[] => {
   // This is placeholder data
   return [
     { id: 1, date: '2024-07-20', vendor: 'Reliance Fresh', amount: 1250.50, category: 'Groceries' },
@@ -13,8 +24,24 @@ const getReceiptHistory = async () => {
   ];
 };
 
-export default async function HistoryPage() {
-  const history = await getReceiptHistory();
+export default function HistoryPage() {
+  const [history, setHistory] = useState<Receipt[]>([]);
+
+  useEffect(() => {
+    const placeholderHistory = getReceiptHistory();
+    const storedHistory = JSON.parse(localStorage.getItem('receiptHistory') || '[]');
+    const combinedHistory = [...storedHistory, ...placeholderHistory];
+    
+    // Simple deduplication based on a composite key (vendor+date+amount)
+    const uniqueHistory = Array.from(new Map(combinedHistory.map(item =>
+      [`${item.vendor}-${item.date}-${item.amount}`, item]
+    )).values());
+    
+    // Sort by date, most recent first
+    uniqueHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    setHistory(uniqueHistory);
+  }, []);
 
   return (
     <div className="p-4 md:p-6 space-y-4">
