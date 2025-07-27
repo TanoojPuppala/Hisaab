@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Lightbulb, TrendingUp, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import type { DateRange } from 'react-day-picker';
 
 type Receipt = {
   id: number;
@@ -25,6 +26,7 @@ type Budget = {
   id: number;
   category: string;
   limit: number;
+  dateRange: DateRange;
 };
 
 const getDashboardData = () => {
@@ -44,33 +46,41 @@ export default function DashboardPage() {
     const [totalBudget, setTotalBudget] = useState(0);
     const [balance, setBalance] = useState(0);
     const [budgetProgress, setBudgetProgress] = useState(0);
+    const [locale, setLocale] = useState('en-IN');
+    const [currency, setCurrency] = useState('INR');
 
     const data = getDashboardData();
 
     useEffect(() => {
+        const userLocale = navigator.language;
+        setLocale(userLocale);
+        if (userLocale === 'en-US') {
+            setCurrency('USD');
+        } else {
+            setCurrency('INR'); // Default to INR
+        }
+
         const storedReceipts: Receipt[] = JSON.parse(localStorage.getItem('receiptHistory') || '[]');
         const storedExpenses: Expense[] = JSON.parse(localStorage.getItem('expenses') || '[]');
         const storedBudgets: Budget[] = JSON.parse(localStorage.getItem('budgets') || '[]');
-        
-        const initialBudgets: Budget[] = [
-            { id: 1, category: 'Groceries', limit: 8000 },
-            { id: 2, category: 'Entertainment', limit: 3000 },
-        ];
-        
-        const allBudgets = storedBudgets.length > 0 ? storedBudgets : initialBudgets;
 
         const totalReceiptsAmount = storedReceipts.reduce((total, receipt) => total + receipt.amount, 0);
         const totalExpensesAmount = storedExpenses.reduce((total, expense) => total + expense.amount, 0);
         const totalSpent = totalReceiptsAmount + totalExpensesAmount;
 
-        const budgetTotal = allBudgets.reduce((total, budget) => total + budget.limit, 0);
+        const budgetTotal = storedBudgets.reduce((total, budget) => total + budget.limit, 0);
+        const effectiveBudget = budgetTotal > 0 ? budgetTotal : 10000; // Default budget if none set
 
         setSpent(totalSpent);
-        setTotalBudget(budgetTotal > 0 ? budgetTotal : 5000); // fallback to 5000 if no budget is set
-        setBalance((budgetTotal > 0 ? budgetTotal : 5000) - totalSpent);
-        setBudgetProgress(budgetTotal > 0 ? (totalSpent / budgetTotal) * 100 : (totalSpent / 5000) * 100);
+        setTotalBudget(effectiveBudget);
+        setBalance(effectiveBudget - totalSpent);
+        setBudgetProgress((totalSpent / effectiveBudget) * 100);
 
     }, []);
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount);
+    }
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -87,10 +97,10 @@ export default function DashboardPage() {
              <div className="text-center">
               <p className="text-sm text-muted-foreground">Amount Spent</p>
               <p className="font-headline text-4xl font-bold">
-                ₹{spent.toLocaleString('en-IN')}
+                {formatCurrency(spent)}
               </p>
               <p className="text-sm text-muted-foreground">
-                out of ₹{totalBudget.toLocaleString('en-IN')}
+                out of {formatCurrency(totalBudget)}
               </p>
             </div>
             <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
@@ -108,7 +118,7 @@ export default function DashboardPage() {
               </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-              <p className="font-headline text-4xl font-bold">₹{balance.toLocaleString('en-IN')}</p>
+              <p className="font-headline text-4xl font-bold">{formatCurrency(balance)}</p>
               <p className="text-sm text-muted-foreground">This is your available balance.</p>
           </CardContent>
       </Card>
@@ -129,7 +139,7 @@ export default function DashboardPage() {
                   <p className="text-sm text-muted-foreground">{activity.date}</p>
                 </div>
                  <div className="text-right">
-                    <p className="font-bold">₹{activity.amount.toFixed(2)}</p>
+                    <p className="font-bold">{formatCurrency(activity.amount)}</p>
                     <Badge variant="outline">{activity.type}</Badge>
                 </div>
               </li>

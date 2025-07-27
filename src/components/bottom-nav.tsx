@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, History, LayoutDashboard, Upload, Wallet2, Receipt } from 'lucide-react';
+import { Bot, History, LayoutDashboard, Upload, Wallet, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/expenses', label: 'Expenses', icon: Receipt },
   { href: '/upload', label: 'Upload', icon: Upload },
   { href: '/history', label: 'History', icon: History },
+  { href: '/wallet', label: 'Wallet', icon: Wallet },
   { href: '/chat', label: 'AI Chat', icon: Bot },
 ];
 
@@ -18,7 +19,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-10 mx-auto h-16 max-w-md border-t bg-background/95 backdrop-blur-sm">
-      <div className="grid h-full grid-cols-5">
+      <div className="grid h-full grid-cols-6">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (

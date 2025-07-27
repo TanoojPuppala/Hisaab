@@ -51,7 +51,21 @@ export default function WalletPage() {
     const [newBudgetLimit, setNewBudgetLimit] = useState('');
     const [newBudgetDateRange, setNewBudgetDateRange] = useState<DateRange | undefined>({ from: new Date(), to: undefined });
 
+    const [locale, setLocale] = useState('en-IN');
+    const [currency, setCurrency] = useState('INR');
+    const [currencySymbol, setCurrencySymbol] = useState('₹');
+
     useEffect(() => {
+        const userLocale = navigator.language;
+        setLocale(userLocale);
+        if (userLocale === 'en-US') {
+          setCurrency('USD');
+          setCurrencySymbol('$');
+        } else {
+          setCurrency('INR');
+          setCurrencySymbol('₹');
+        }
+
         const storedVouchers = JSON.parse(localStorage.getItem('vouchers') || '[]');
         if (storedVouchers.length > 0) {
             setVouchers(storedVouchers);
@@ -61,11 +75,15 @@ export default function WalletPage() {
 
         const storedBudgets = JSON.parse(localStorage.getItem('budgets') || '[]');
         if (storedBudgets.length > 0) {
-            setBudgets(storedBudgets.map(b => ({...b, dateRange: { from: new Date(b.dateRange.from), to: b.dateRange.to ? new Date(b.dateRange.to) : undefined}})));
+            setBudgets(storedBudgets.map((b: any) => ({...b, dateRange: { from: new Date(b.dateRange.from), to: b.dateRange.to ? new Date(b.dateRange.to) : undefined}})));
         } else {
             setBudgets(initialBudgets);
         }
     }, []);
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+    }
 
     const saveVouchers = (updatedVouchers: Voucher[]) => {
         localStorage.setItem('vouchers', JSON.stringify(updatedVouchers));
@@ -140,7 +158,7 @@ export default function WalletPage() {
                                 <Input id="category" placeholder="e.g., Shopping" value={newBudgetCategory} onChange={e => setNewBudgetCategory(e.target.value)} />
                             </div>
                              <div>
-                                <Label htmlFor="limit">Budget Limit (₹)</Label>
+                                <Label htmlFor="limit">Budget Limit ({currencySymbol})</Label>
                                 <Input id="limit" type="number" placeholder="e.g., 5000" value={newBudgetLimit} onChange={e => setNewBudgetLimit(e.target.value)} />
                             </div>
                             <div>
@@ -185,7 +203,7 @@ export default function WalletPage() {
                             <CardContent className="p-4 flex items-center">
                                 <div className="flex-1">
                                     <p className="font-bold">{budget.category}</p>
-                                    <p className="text-sm text-muted-foreground">Limit: ₹{budget.limit.toLocaleString()}</p>
+                                    <p className="text-sm text-muted-foreground">Limit: {formatCurrency(budget.limit)}</p>
                                     <p className="text-xs text-muted-foreground">
                                         {budget.dateRange.from && format(budget.dateRange.from, "dd MMM")} - {budget.dateRange.to && format(budget.dateRange.to, "dd MMM, yyyy")}
                                     </p>
@@ -209,7 +227,7 @@ export default function WalletPage() {
                                 <Input id="voucherName" placeholder="e.g., Amazon Pay" value={newVoucherName} onChange={e => setNewVoucherName(e.target.value)} />
                             </div>
                              <div>
-                                <Label htmlFor="voucherAmount">Amount (₹)</Label>
+                                <Label htmlFor="voucherAmount">Amount ({currencySymbol})</Label>
                                 <Input id="voucherAmount" type="number" placeholder="e.g., 500" value={newVoucherAmount} onChange={e => setNewVoucherAmount(e.target.value)} />
                             </div>
                             <Button className="w-full" onClick={handleAddVoucher}>
@@ -222,7 +240,7 @@ export default function WalletPage() {
                              <CardContent className="p-4 flex items-center text-yellow-900">
                                 <div className="flex-1">
                                     <p className="font-bold">{voucher.name}</p>
-                                    <p className="text-2xl font-headline font-bold">₹{voucher.amount.toLocaleString()}</p>
+                                    <p className="text-2xl font-headline font-bold">{formatCurrency(voucher.amount)}</p>
                                 </div>
                                 <Button variant="ghost" size="icon" className="text-yellow-900/70 hover:text-yellow-900" onClick={() => handleDeleteVoucher(voucher.id)}>
                                     <Trash2 className="h-5 w-5" />

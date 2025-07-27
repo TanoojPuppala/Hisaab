@@ -19,13 +19,30 @@ export default function ExpensesPage() {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const { toast } = useToast();
+  const [locale, setLocale] = useState('en-IN');
+  const [currency, setCurrency] = useState('INR');
+  const [currencySymbol, setCurrencySymbol] = useState('₹');
 
   useEffect(() => {
+    const userLocale = navigator.language;
+    setLocale(userLocale);
+    if (userLocale === 'en-US') {
+      setCurrency('USD');
+      setCurrencySymbol('$');
+    } else {
+      setCurrency('INR');
+      setCurrencySymbol('₹');
+    }
+
     const storedExpenses = JSON.parse(localStorage.getItem('expenses') || '[]');
     if (storedExpenses) {
       setExpenses(storedExpenses);
     }
   }, []);
+  
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2 }).format(amount);
+  }
 
   const saveExpenses = (updatedExpenses: Expense[]) => {
     localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
@@ -41,7 +58,7 @@ export default function ExpensesPage() {
       setAmount('');
       toast({
         title: "Expense Added",
-        description: `${description} for ₹${amount} has been added.`,
+        description: `${description} for ${formatCurrency(parseFloat(amount))} has been added.`,
       });
     } else {
       toast({
@@ -86,7 +103,7 @@ export default function ExpensesPage() {
             />
           </div>
           <div>
-            <Label htmlFor="amount">Amount (₹)</Label>
+            <Label htmlFor="amount">Amount ({currencySymbol})</Label>
             <Input
               id="amount"
               type="number"
@@ -115,7 +132,7 @@ export default function ExpensesPage() {
                     <p className="font-semibold">{expense.description}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <p className="font-bold">₹{expense.amount.toFixed(2)}</p>
+                    <p className="font-bold">{formatCurrency(expense.amount)}</p>
                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDeleteExpense(expense.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -130,7 +147,7 @@ export default function ExpensesPage() {
         {expenses.length > 0 && (
           <div className="border-t p-4 flex justify-between items-center font-bold">
             <p>Total Expenses</p>
-            <p>₹{totalExpenses.toFixed(2)}</p>
+            <p>{formatCurrency(totalExpenses)}</p>
           </div>
         )}
       </Card>
