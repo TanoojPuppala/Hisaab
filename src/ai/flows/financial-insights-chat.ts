@@ -26,32 +26,13 @@ export async function financialInsightsChat(input: FinancialInsightsChatInput): 
   return financialInsightsChatFlow(input);
 }
 
-const getLocalizedFinancialTerminology = ai.defineTool({
-  name: 'getLocalizedFinancialTerminology',
-  description: 'Retrieves localized financial terminology based on the user selected language.',
-  inputSchema: z.object({
-    language: z.string().describe('The user selected locale for financial terminology.'),
-  }),
-  outputSchema: z.string(),
-},
-async (input) => {
-  // TODO: Implement the logic to fetch localized financial terminology based on the language.
-  // This is a placeholder implementation.
-  const localizedTerminology = `Localized financial terminology for ${input.language} is not yet available. Returning english terminology.`;
-  return localizedTerminology;
-}
-);
-
 const financialInsightsChatPrompt = ai.definePrompt({
   name: 'financialInsightsChatPrompt',
-  tools: [getLocalizedFinancialTerminology],
   input: {schema: FinancialInsightsChatInputSchema},
   output: {schema: FinancialInsightsChatOutputSchema},
   prompt: `You are a smart finance assistant that provides personalized financial insights and advice to users in their local language.
 
-  First, call the getLocalizedFinancialTerminology tool to translate all financial terms in the selected language: {{{language}}}.
-
-  Then, respond to the user query: {{{query}}} using the localized financial terminology.
+  Respond to the user query: {{{query}}} in the user's selected language: {{{language}}}.
 
   Output should be concise, easy to understand, and relevant to the user's query.
   `,
