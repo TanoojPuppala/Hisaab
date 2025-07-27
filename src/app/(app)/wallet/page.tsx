@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,8 +39,8 @@ const initialBudgets: Budget[] = [
 
 export default function WalletPage() {
     const { toast } = useToast();
-    const [vouchers, setVouchers] = useState(initialVouchers);
-    const [budgets, setBudgets] = useState(initialBudgets);
+    const [vouchers, setVouchers] = useState<Voucher[]>([]);
+    const [budgets, setBudgets] = useState<Budget[]>([]);
     
     // State for new voucher
     const [newVoucherName, setNewVoucherName] = useState('');
@@ -50,6 +50,32 @@ export default function WalletPage() {
     const [newBudgetCategory, setNewBudgetCategory] = useState('');
     const [newBudgetLimit, setNewBudgetLimit] = useState('');
     const [newBudgetDateRange, setNewBudgetDateRange] = useState<DateRange | undefined>({ from: new Date(), to: undefined });
+
+    useEffect(() => {
+        const storedVouchers = JSON.parse(localStorage.getItem('vouchers') || '[]');
+        if (storedVouchers.length > 0) {
+            setVouchers(storedVouchers);
+        } else {
+            setVouchers(initialVouchers);
+        }
+
+        const storedBudgets = JSON.parse(localStorage.getItem('budgets') || '[]');
+        if (storedBudgets.length > 0) {
+            setBudgets(storedBudgets.map(b => ({...b, dateRange: { from: new Date(b.dateRange.from), to: b.dateRange.to ? new Date(b.dateRange.to) : undefined}})));
+        } else {
+            setBudgets(initialBudgets);
+        }
+    }, []);
+
+    const saveVouchers = (updatedVouchers: Voucher[]) => {
+        localStorage.setItem('vouchers', JSON.stringify(updatedVouchers));
+        setVouchers(updatedVouchers);
+    }
+    
+    const saveBudgets = (updatedBudgets: Budget[]) => {
+        localStorage.setItem('budgets', JSON.stringify(updatedBudgets));
+        setBudgets(updatedBudgets);
+    }
 
     const handleAddVoucher = () => {
         if (!newVoucherName || !newVoucherAmount) {
@@ -61,13 +87,13 @@ export default function WalletPage() {
             name: newVoucherName,
             amount: parseFloat(newVoucherAmount)
         };
-        setVouchers([...vouchers, newVoucher]);
+        saveVouchers([...vouchers, newVoucher]);
         setNewVoucherName('');
         setNewVoucherAmount('');
     };
     
     const handleDeleteVoucher = (id: number) => {
-        setVouchers(vouchers.filter(v => v.id !== id));
+        saveVouchers(vouchers.filter(v => v.id !== id));
     };
 
     const handleAddBudget = () => {
@@ -81,14 +107,14 @@ export default function WalletPage() {
             limit: parseFloat(newBudgetLimit),
             dateRange: newBudgetDateRange,
         };
-        setBudgets([...budgets, newBudget]);
+        saveBudgets([...budgets, newBudget]);
         setNewBudgetCategory('');
         setNewBudgetLimit('');
         setNewBudgetDateRange({ from: new Date(), to: undefined });
     };
 
     const handleDeleteBudget = (id: number) => {
-        setBudgets(budgets.filter(b => b.id !== id));
+        saveBudgets(budgets.filter(b => b.id !== id));
     };
 
     return (

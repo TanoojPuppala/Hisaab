@@ -1,16 +1,35 @@
+"use client";
+
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { IndianRupee, Lightbulb, TrendingUp } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Lightbulb, TrendingUp, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-// Fetch dashboard data from ADK /summary endpoint
-const getDashboardData = async () => {
+type Receipt = {
+  id: number;
+  date: string;
+  vendor: string;
+  amount: number;
+  currency?: string;
+  category: string;
+};
+
+type Expense = {
+  id: number;
+  description: string;
+  amount: number;
+};
+
+type Budget = {
+  id: number;
+  category: string;
+  limit: number;
+};
+
+const getDashboardData = () => {
     // This is placeholder data.
     return {
-      budget: {
-        spent: 1250.75,
-        total: 5000,
-      },
       recentActivity: [
         { id: 1, vendor: 'Starbucks', amount: 350.00, type: 'Food', date: 'Today' },
         { id: 2, vendor: 'Uber', amount: 150.50, type: 'Travel', date: 'Today' },
@@ -20,9 +39,38 @@ const getDashboardData = async () => {
     };
 };
 
-export default async function DashboardPage() {
-    const data = await getDashboardData();
-    const budgetProgress = (data.budget.spent / data.budget.total) * 100;
+export default function DashboardPage() {
+    const [spent, setSpent] = useState(0);
+    const [totalBudget, setTotalBudget] = useState(0);
+    const [balance, setBalance] = useState(0);
+    const [budgetProgress, setBudgetProgress] = useState(0);
+
+    const data = getDashboardData();
+
+    useEffect(() => {
+        const storedReceipts: Receipt[] = JSON.parse(localStorage.getItem('receiptHistory') || '[]');
+        const storedExpenses: Expense[] = JSON.parse(localStorage.getItem('expenses') || '[]');
+        const storedBudgets: Budget[] = JSON.parse(localStorage.getItem('budgets') || '[]');
+        
+        const initialBudgets: Budget[] = [
+            { id: 1, category: 'Groceries', limit: 8000 },
+            { id: 2, category: 'Entertainment', limit: 3000 },
+        ];
+        
+        const allBudgets = storedBudgets.length > 0 ? storedBudgets : initialBudgets;
+
+        const totalReceiptsAmount = storedReceipts.reduce((total, receipt) => total + receipt.amount, 0);
+        const totalExpensesAmount = storedExpenses.reduce((total, expense) => total + expense.amount, 0);
+        const totalSpent = totalReceiptsAmount + totalExpensesAmount;
+
+        const budgetTotal = allBudgets.reduce((total, budget) => total + budget.limit, 0);
+
+        setSpent(totalSpent);
+        setTotalBudget(budgetTotal > 0 ? budgetTotal : 5000); // fallback to 5000 if no budget is set
+        setBalance((budgetTotal > 0 ? budgetTotal : 5000) - totalSpent);
+        setBudgetProgress(budgetTotal > 0 ? (totalSpent / budgetTotal) * 100 : (totalSpent / 5000) * 100);
+
+    }, []);
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -39,10 +87,10 @@ export default async function DashboardPage() {
              <div className="text-center">
               <p className="text-sm text-muted-foreground">Amount Spent</p>
               <p className="font-headline text-4xl font-bold">
-                ₹{data.budget.spent.toLocaleString('en-IN')}
+                ₹{spent.toLocaleString('en-IN')}
               </p>
               <p className="text-sm text-muted-foreground">
-                out of ₹{data.budget.total.toLocaleString('en-IN')}
+                out of ₹{totalBudget.toLocaleString('en-IN')}
               </p>
             </div>
             <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
@@ -50,6 +98,19 @@ export default async function DashboardPage() {
             </div>
           </div>
         </CardContent>
+      </Card>
+
+      <Card>
+          <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                  <Wallet className="h-6 w-6 text-primary" />
+                  Remaining Budget
+              </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+              <p className="font-headline text-4xl font-bold">₹{balance.toLocaleString('en-IN')}</p>
+              <p className="text-sm text-muted-foreground">This is your available balance.</p>
+          </CardContent>
       </Card>
 
       <Card>

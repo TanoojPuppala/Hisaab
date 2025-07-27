@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusCircle, Trash2 } from "lucide-react";
+import { useToast } from '@/hooks/use-toast';
 
 type Expense = {
   id: number;
@@ -17,20 +18,47 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const storedExpenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    if (storedExpenses) {
+      setExpenses(storedExpenses);
+    }
+  }, []);
+
+  const saveExpenses = (updatedExpenses: Expense[]) => {
+    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+    setExpenses(updatedExpenses);
+  };
 
   const handleAddExpense = () => {
     if (description && amount) {
-      setExpenses([
-        ...expenses,
-        { id: Date.now(), description, amount: parseFloat(amount) },
-      ]);
+      const newExpense = { id: Date.now(), description, amount: parseFloat(amount) };
+      const updatedExpenses = [...expenses, newExpense];
+      saveExpenses(updatedExpenses);
       setDescription('');
       setAmount('');
+      toast({
+        title: "Expense Added",
+        description: `${description} for ₹${amount} has been added.`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please fill in all fields.",
+      });
     }
   };
 
   const handleDeleteExpense = (id: number) => {
-    setExpenses(expenses.filter(expense => expense.id !== id));
+    const updatedExpenses = expenses.filter(expense => expense.id !== id);
+    saveExpenses(updatedExpenses);
+    toast({
+      title: "Expense Removed",
+      description: "The selected expense has been removed.",
+    });
   };
 
   const totalExpenses = expenses.reduce((total, expense) => total + expense.amount, 0);
